@@ -1,0 +1,130 @@
+<html>
+    <head>
+        <script>
+
+            /**
+              * Generates the initial grid (hardcoded to 25x25)
+              */
+            function generateGrid() {
+                const grid = new Array(25).fill(null);
+                grid.forEach((r, i) => grid[i] = new Array(25).fill(null));
+                const mazeDiv = document.getElementById("maze");
+                var str = '';
+                grid.forEach((row, i) => {
+                    str += '<div style="display: table-row">'
+                    row.forEach ((column, j) => {
+                        cell = {};
+                        cell.id = i + '-' + j;
+                        cell.row = i;
+                        cell.column = j;
+                        const marginTop = "margin-top: " + (i * 10) + "px;";
+                        const marginLeft = "margin-left: " + (j * 10) + "px;";
+                        str += '<div id='+ cell.id +' style="height: 10px; width: 10px; border: 1px solid; display: table-cell; '+ marginTop + marginLeft +'" ></div>';
+                        grid[i][j] = cell;
+                    })
+                    str += '</div>';
+                });
+
+                mazeDiv.innerHTML += str;
+                return grid;
+            }
+
+            /**
+              * Gets the unvisited neighbors for the input coordinates from the grid.
+              */
+            function unvisitedNeighbors(i, j, grid) {
+                const neighbors = [];
+
+                if (grid[i+1]) {
+                    neighbors.push(grid[i+1][j]);
+                }
+
+                if (grid[i][j+1]) {
+                    neighbors.push(grid[i][j+1]);
+                }
+
+                if (grid[i-1]) {
+                    neighbors.push(grid[i-1][j]);
+                }
+
+                if (grid[i][j-1]) {
+                    neighbors.push(grid[i][j-1]);
+                }
+
+                return neighbors.filter(cell => !cell.visited);
+            }
+
+            /**
+              * A delay method to aid rendering.
+              */
+            function sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            /**
+              * "Connects" two cells by editing the div borders.
+              */
+            function connect(cell1, cell2) {
+                const cell1Html = document.getElementById(cell1.id);
+                const cell2Html = document.getElementById(cell2.id);
+                if (cell1.row - cell2.row == 1) {
+                    // cell one is below cell 2
+                    cell1Html.style.borderTop = 'none';
+                    cell2Html.style.borderBottom = 'none';
+                } else if (cell1.row - cell2.row == -1) {
+                    // cell one is above cell 2
+                    cell1Html.style.borderBottom = 'none';
+                    cell2Html.style.borderTop = 'none';
+                } else if (cell1.column - cell2.column == 1) {
+                    // cell one is to the right of cell 2
+                    cell1Html.style.borderLeft = 'none';
+                    cell2Html.style.borderRight = 'none';
+                } else if (cell1.column - cell2.column == -1) {
+                    // cell one is to the left of cell 2
+                    cell1Html.style.borderRight = 'none';
+                    cell2Html.style.borderLeft = 'none';
+                }
+            }
+
+            /**
+              * Generates the maze by connecting neighbors.
+              */
+            async function generateMaze(grid) {
+                const cells = grid.flat();
+                const stack = [];
+                var current = grid[0][0];
+                
+                current.visited = true;
+
+                while (cells.filter(cell => !cell.visited).length > 0) {
+                    const neighbors = unvisitedNeighbors(current.row, current.column, grid);
+                    const currentHtml = document.getElementById(current.id);
+                    currentHtml.style.backgroundColor = 'red';
+                    await sleep(20);
+                    if (neighbors.length > 0) {
+                        const neighbor = neighbors[Math.floor(Math.random() * neighbors.length)];
+                        stack.push(current);
+                        connect(current, neighbor);
+                        currentHtml.style.backgroundColor = null;
+                        current = neighbor;
+                        current.visited = true;
+                    } else if (stack.length > 0) {
+                        current = stack.pop();
+                    } else {
+                        current = cells.filter(cell => cell.visited)[0];
+                        stack.push(current);
+                    }
+                    currentHtml.style.backgroundColor = null;
+                }
+            }
+
+            window.addEventListener('load', () => {
+                const grid = generateGrid();
+                generateMaze(grid);
+            });
+        </script>
+    </head>
+    <body>
+        <div id="maze" style="height: 500px; width: 500px; display: table;" ></div>
+    </body>
+</html>
